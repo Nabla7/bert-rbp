@@ -20,7 +20,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '../attention_analysis'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../motif'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../src'))
-
+import logging
 import argparse
 import glob
 import json
@@ -369,6 +369,24 @@ def train(args, train_dataset, model, tokenizer):
             if args.max_steps > 0 and global_step > args.max_steps:
                 epoch_iterator.close()
                 break
+
+            # Add logging to print the batch input shapes
+        logger.info(f"Batch input_ids shape: {batch[0].shape}")
+        logger.info(f"Batch attention_mask shape: {batch[1].shape}")
+        if args.model_type != "distilbert":
+            logger.info(f"Batch token_type_ids shape: {batch[2].shape}")
+        logger.info(f"Batch labels shape: {batch[3].shape}")
+
+        inputs = {"input_ids": batch[0], "attention_mask": batch[1], "labels": batch[3]}
+        if args.model_type != "distilbert":
+            inputs["token_type_ids"] = (
+                batch[2] if args.model_type in TOKEN_ID_GROUP else None
+            )  # XLM, DistilBERT, RoBERTa, and XLM-RoBERTa don't use segment_ids
+
+        logger.info(f"Inputs to model: {inputs}")
+
+        outputs = model(**inputs)
+        loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
         if args.max_steps > 0 and global_step > args.max_steps:
             train_iterator.close()
             break
@@ -903,6 +921,12 @@ def main():
 
     # Set seed
     set_seed(args)
+
+    logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    level=logging.INFO if args.local_rank in [-1, 0] else logging.WARN,)
+
 
     # Prepare GLUE task
     args.task_name = args.task_name.lower()
