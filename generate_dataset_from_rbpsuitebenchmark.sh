@@ -6,7 +6,7 @@ OUTPUT_PATH="./datasets"
 # Create the output directory if it doesn't exist
 mkdir -p $OUTPUT_PATH
 
-# Define the benchmark directory
+# Define the benchmark directory, !!!!WARNING!!!!: make a folder called benchmark and unzip benchmark.gz (the rbpsuite hsit) there. This should create a folder called train_dir with the positive and negative fa files.
 BENCHMARK_DIR="benchmark/train_dir"
 
 # Run the Python script
